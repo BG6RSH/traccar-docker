@@ -2,7 +2,7 @@
 name: Build and push docker images
 
 env:
-  DOCKERHUB_REPOSITORY: bg6rsh/traccar
+  DOCKERHUB_REPOSITORY: bg6rsh/traccar-amap
 
 on:
   push:
