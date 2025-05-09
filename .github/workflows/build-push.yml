@@ -2,12 +2,12 @@
 name: Build and push docker images
 
 env:
-  DOCKERHUB_REPOSITORY: bg6rsh/traccar
+  DOCKERHUB_REPOSITORY: bg6rsh/traccar-amap
 
 on:
   push:
     branches:
-      - master
+      - amap
       - v[0-9]+.[0-9]+
 
 defaults:
@@ -33,11 +33,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Set environment DOCKERHUB_IMAGE_TAGS on master
-        if: github.ref == 'refs/heads/master' && matrix.os == 'alpine'
+      - name: Set environment DOCKERHUB_IMAGE_TAGS on amap
+        if: github.ref == 'refs/heads/amap' && matrix.os == 'alpine'
         run: echo "DOCKERHUB_IMAGE_TAGS=$DOCKERHUB_REPOSITORY:latest" >> $GITHUB_ENV
       - name: Set environment DOCKERHUB_IMAGE_TAGS
-        if: github.ref != 'refs/heads/master'
+        if: github.ref != 'refs/heads/amap'
         run: |
           _BRANCH=${GITHUB_REF##*/}
           _VERSION=${_BRANCH#v*}
