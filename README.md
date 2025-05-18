@@ -22,43 +22,17 @@ DockerHub 镜像: <https://hub.docker.com/r/bg6rsh/traccar> ![](https://img.shie
 **Ubuntu based**: linux/amd64, linux/arm64, linux/arm/v7
 
 ## 容器创建示例:
-1. **创建工作目录:**
+1. **在官网下载原版服务程序压缩包:**
     ```bash
-    mkdir -p /opt/traccar/logs
+    wget https://github.com/traccar/traccar/releases/download/v6.6/traccar-other-6.6.zip
     ```
 
-1. **获取默认 traccar.xml:**
-    ```bash
-    docker run \
-    --rm \
-    --entrypoint cat \
-    traccar/traccar:latest \
-    /opt/traccar/conf/traccar.xml > /opt/traccar/traccar.xml
-    ```
-
-1. **编辑 traccar.xml:** <https://www.traccar.org/configuration-file/>
-
-1. **创建容器:**
-    ```bash
-    docker run \
-    --name traccar \
-    --hostname traccar \
-    --detach --restart unless-stopped \
-    --publish 80:8082 \
-    --publish 5000-5150:5000-5150 \
-    --publish 5000-5150:5000-5150/udp \
-    --volume /opt/traccar/logs:/opt/traccar/logs:rw \
-    --volume /opt/traccar/traccar.xml:/opt/traccar/conf/traccar.xml:ro \
-    --volume /opt/traccar/data:/opt/traccar/data:rw \
-    traccar/traccar:latest
-    ```
+2. **制作适配版服务程序压缩包**
+    将适配版 tracker-server.jar,traccar.xml,changelog-gcj02.xml,changelog-master.xml 复制到原版服务程序:traccar-other-6.6.zip
+    
 
 ## 数据库
 执行上述“docker run”命令时的默认值是内部H2数据库，但这应该仅供基本使用.  
 
 默认情况下，Traccar使用嵌入式H2数据库，但我们不建议将其用于生产。生产环境推荐使用外部MySQL数据库， 配置方法请看 [Traccar MySQL documentation](https://www.traccar.org/mysql/).
 
-## 默认JVM选项:
-- `-Xms1g`
-- `-Xmx1g`
-- `-Djava.net.preferIPv4Stack=true`
