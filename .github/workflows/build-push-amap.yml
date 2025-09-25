@@ -1,67 +1,116 @@
 ---
+# 工作流名称：Build and push docker images
+# 功能描述：在特定分支推送时构建并推送到 Docker Hub 的多平台镜像。
+# 触发条件：当向符合 v*.*.* 格式的标签（如 v5.8.0）推送时触发该工作流。
 name: Build and push docker images
 
+# 定义环境变量
 env:
+  # Docker Hub 上的目标仓库名
   DOCKERHUB_REPOSITORY: bg6rsh/traccar-amap
 
+# 配置 GitHub Actions 的触发器
 on:
   push:
-    branches:
-      - amap
-      - v[0-9]+.[0-9]+
+    # 匹配版本号格式的分支名（例如 v1.2.3）
+    branches: ["v[0-9]+.[0-9]+.[0-9]+"]
 
+# 设置默认运行 shell 为 bash
 defaults:
   run:
     shell: bash
 
+# 定义 jobs 列表
 jobs:
+  # job 名称：docker-build-push
+  # 功能描述：基于不同操作系统构建并推送 Docker 镜像到 Docker Hub
   docker-build-push:
     name: Build and push docker images
-    runs-on: ubuntu-latest
+    # 指定运行环境为 Ubuntu 24.04
+    runs-on: ubuntu-24.04
+    # 使用矩阵策略，针对不同的 OS 构建多个镜像
     strategy:
       matrix:
+        # 支持的操作系统列表：alpine、debian 和 ubuntu
         os: [alpine, debian, ubuntu]
+
+    # 定义执行步骤
     steps:
+      # 步骤一：检出源码
       - name: Checkout
         uses: actions/checkout@v4
+
+      # 步骤二：设置 QEMU，用于跨架构构建支持
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+
+      # 步骤三：安装和配置 Docker Buildx 插件以支持多平台构建
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      # 步骤四：登录到 Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
+          # 使用 GitHub Secrets 中存储的用户名与 token 登录
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Set environment DOCKERHUB_IMAGE_TAGS on amap
-        if: github.ref == 'refs/heads/amap' && matrix.os == 'alpine'
-        run: echo "DOCKERHUB_IMAGE_TAGS=$DOCKERHUB_REPOSITORY:latest" >> $GITHUB_ENV
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      # 步骤五：根据当前分支信息动态设置要打标签的镜像名
       - name: Set environment DOCKERHUB_IMAGE_TAGS
-        if: github.ref != 'refs/heads/amap'
+        # 只有不是 master 分支才执行此步骤
+        if: github.ref != 'refs/heads/master'
         run: |
-          _BRANCH=${GITHUB_REF##*/}
-          _VERSION=${_BRANCH#v*}
-          _MAJOR_VERSION=${_VERSION%.*}
+          # 提取版本号部分（去掉前缀 'v'）
+          _VERSION=${GITHUB_REF_NAME#v*}
+          # 获取主版本号 + 次版本号（如 5.8）
+          _VERSION_MAJOR_MINOR=${_VERSION%.*}
+          # 获取主版本号（如 5）
+          _VERSION_MAJOR=${_VERSION_MAJOR_MINOR%.*}
+          
+          # 初始化标签字符串，包含基本的带操作系统的 tag
           _DOCKERHUB_IMAGE_TAGS="$DOCKERHUB_REPOSITORY:$_VERSION-${{ matrix.os }}"
-          _DOCKERHUB_IMAGE_TAGS+=",$DOCKERHUB_REPOSITORY:$_MAJOR_VERSION-${{ matrix.os }}"
+          _DOCKERHUB_IMAGE_TAGS+=",$DOCKERHUB_REPOSITORY:$_VERSION_MAJOR_MINOR-${{ matrix.os }}"
+          _DOCKERHUB_IMAGE_TAGS+=",$DOCKERHUB_REPOSITORY:$_VERSION_MAJOR-${{ matrix.os }}"
           _DOCKERHUB_IMAGE_TAGS+=",$DOCKERHUB_REPOSITORY:${{ matrix.os }}"
+
+          # 如果是 alpine 系统，则额外添加无后缀的标准 tag（latest/latest-major等）
           if [ "${{ matrix.os }}" == "alpine" ]; then
             _DOCKERHUB_IMAGE_TAGS+=",$DOCKERHUB_REPOSITORY:$_VERSION"
-            _DOCKERHUB_IMAGE_TAGS+=",$DOCKERHUB_REPOSITORY:$_MAJOR_VERSION"
+            _DOCKERHUB_IMAGE_TAGS+=",$DOCKERHUB_REPOSITORY:$_VERSION_MAJOR_MINOR"
+            _DOCKERHUB_IMAGE_TAGS+=",$DOCKERHUB_REPOSITORY:$_VERSION_MAJOR"
+            _DOCKERHUB_IMAGE_TAGS+=",$DOCKERHUB_REPOSITORY:latest"
           fi
+
+          # 将最终生成的镜像标签写入 GITHUB_ENV 环境变量中供后续使用
           echo "DOCKERHUB_IMAGE_TAGS=$_DOCKERHUB_IMAGE_TAGS" >> $GITHUB_ENV
+          echo "VERSION=$_VERSION" >> $GITHUB_ENV
+
+      # 步骤六：设定目标平台（amd64/arm64/arm/v7）
       - name: Set environment DOCKERHUB_IMAGE_PLATFORMS
         run: |
+          # 默认支持 amd64 和 arm64 平台
           _DOCKERHUB_IMAGE_PLATFORMS="linux/amd64,linux/arm64"
+          # 如果是 ubuntu 系统则增加对 arm/v7 的支持
           if [ "${{ matrix.os }}" == "ubuntu" ]; then
             _DOCKERHUB_IMAGE_PLATFORMS+=",linux/arm/v7"
           fi
+          # 写入环境变量供 build-push 步骤使用
           echo "DOCKERHUB_IMAGE_PLATFORMS=$_DOCKERHUB_IMAGE_PLATFORMS" >> $GITHUB_ENV
+
+      # 步骤七：实际进行镜像构建和推送
       - name: Build and push
+        # 当且仅当设置了 DOCKERHUB_IMAGE_TAGS 才继续执行
         if: env.DOCKERHUB_IMAGE_TAGS != ''
         uses: docker/build-push-action@v6
         with:
+          # 使用对应操作系统的 Dockerfile 进行构建
           file: Dockerfile.${{ matrix.os }}
+          # 推送的镜像标签列表
           tags: ${{ env.DOCKERHUB_IMAGE_TAGS }}
+          # 添加 Open Container Initiative (OCI) 兼容的镜像元数据标签
+          labels: org.opencontainers.image.version=${{ env.VERSION }}
+          # 目标构建平台列表
           platforms: ${{ env.DOCKERHUB_IMAGE_PLATFORMS }}
+          # 启用推送功能
           push: true
