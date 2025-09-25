@@ -54,7 +54,7 @@ jobs:
         with:
           # 使用 GitHub Secrets 中存储的用户名与 token 登录
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       # 步骤五：根据当前分支信息动态设置要打标签的镜像名
       - name: Set environment DOCKERHUB_IMAGE_TAGS
