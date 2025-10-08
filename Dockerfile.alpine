@@ -1,6 +1,6 @@
 FROM alpine:3.21
 
-ENV TRACCAR_VERSION=6.10.0
+ENV TRACCAR_VERSION=6.10.1
 
 WORKDIR /opt/traccar
 
@@ -8,7 +8,7 @@ RUN set -ex; \
     apk add --no-cache --no-progress \
       openjdk17-jre-headless \
       wget; \
-    wget -qO /tmp/traccar.zip http://bbs.atoo.top:8081/traccar/traccar-other-$TRACCAR_VERSION-amap-1.zip; \
+    wget -qO /tmp/traccar.zip http://bbs.atoo.top:8081/traccar/traccar-other-$TRACCAR_VERSION-amap.zip; \
     unzip -qo /tmp/traccar.zip -d /opt/traccar; \
     rm /tmp/traccar.zip; \
     apk del wget
