@@ -27,7 +27,7 @@ jobs:
   docker-build-push:
     name: Build and push docker images
     # 指定运行环境为 Ubuntu 24.04
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     # 使用矩阵策略，针对不同的 OS 构建多个镜像
     strategy:
       matrix:
