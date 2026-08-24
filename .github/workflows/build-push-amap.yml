@@ -38,11 +38,11 @@ jobs:
     steps:
       # 步骤一：检出源码
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # 步骤二：设置 QEMU，用于跨架构构建支持
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       # 步骤三：安装和配置 Docker Buildx 插件以支持多平台构建
       - name: Set up Docker Buildx
@@ -102,7 +102,7 @@ jobs:
       - name: Build and push
         # 当且仅当设置了 DOCKERHUB_IMAGE_TAGS 才继续执行
         if: env.DOCKERHUB_IMAGE_TAGS != ''
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           # 使用对应操作系统的 Dockerfile 进行构建
           file: Dockerfile.${{ matrix.os }}
