@@ -6,7 +6,7 @@ WORKDIR /opt/traccar
 
 RUN set -ex; \
     apk add --no-cache --no-progress \
-      openjdk17-jre-headless \
+      openjdk22-jre-headless \
       wget; \
     wget -qO /tmp/traccar.zip http://home.atoo.top:8081/traccar/traccar-other-$TRACCAR_VERSION-amap.zip; \
     unzip -qo /tmp/traccar.zip -d /opt/traccar; \

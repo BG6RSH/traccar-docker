@@ -7,7 +7,7 @@ WORKDIR /opt/traccar
 RUN set -ex; \
     apt-get update; \
     TERM=xterm DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
-      openjdk-17-jre-headless \
+      openjdk-22-jre-headless \
       unzip \
       wget; \
     wget -qO /tmp/traccar.zip http://home.atoo.top:8081/traccar/traccar-other-$TRACCAR_VERSION-amap.zip; \
